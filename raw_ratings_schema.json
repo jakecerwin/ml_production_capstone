@@ -1,0 +1,32 @@
+{
+  "columns": [
+    {
+      "name": "time",
+      "type": "datetime",
+      "description": "The timestamp when the user rated the movie",
+      "nullable": false,
+      "pattern": "^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$"
+    },
+    {
+      "name": "userid",
+      "type": "int",
+      "description": "The ID of the user who has watched and rated a movie",
+      "nullable": false,
+      "pattern": "^\\d+$"
+    },
+    {
+      "name": "movieid",
+      "type": "character",
+      "description": "The ID of the movie, ie. movie name + year of release",
+      "nullable": false,
+      "pattern": "^[\\S\\+]+.*?\\d{4}$"
+    },
+    {
+      "name": "rating",
+      "type": "int",
+      "description": "Rating given by the user to a movie on a scale of 1-5",
+      "nullable": false,
+      "pattern": "^\\d{1}$"
+    }
+  ]
+}

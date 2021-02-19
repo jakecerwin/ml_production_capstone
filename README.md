@@ -1,1 +1,1 @@
-# ml_production_capstone
+# SEAI Group 3 - Movie Recommendations Project

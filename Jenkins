@@ -1,0 +1,152 @@
+pipeline {
+   agent any
+    options {
+      timeout(time: 1, unit: 'HOURS') 
+    }
+    stages {
+        stage('Checkout Code') {
+            steps {
+                echo 'Starting code checkout stage.'
+                sh '''
+                    #!/bin/sh
+                    rm -rf
+                '''
+                git branch: 'canary-release', credentialsId: 'Group3', url: 'git@github.com:cmu-seai/group-project-se4ai-group3.git'
+                echo 'Code checked out successfully.'
+            } // steps
+        } // stage
+        
+        stage('Evaluate Code Quality') {
+            steps {
+                 sh '''
+                    #!/bin/sh
+                    python3 -m pytest --cov=code/ --cov-report=xml code/
+                '''
+                cobertura coberturaReportFile: 'coverage.xml'
+                echo 'Code quality check completed.'
+            } // steps
+        } // stage
+        /*
+        stage('Build Model') {
+            steps {
+                script {
+                    try {
+                        sh (
+                            script: 'python3 code/pipeline.py',
+                        )
+                        plot csvFileName: 'plot_RMSE.csv', csvSeries: [[file: 'offline_RMSE.csv']], group: 'Measures', title: 'Offline RMSE', style: 'line', yaxis: 'RMSE'
+                        plot csvFileName: 'plot_MAE.csv', csvSeries: [[file: 'offline_MAE.csv']], group: 'Measures', title: 'Offline MAE', style: 'line', yaxis: 'MAE'
+                        plot csvFileName: 'plot_Coverage.csv', csvSeries: [[file: 'offline_Coverage.csv']], group: 'Measures', title: 'Coverage', style: 'line', yaxis: 'Movies per 10000 users'
+                        sh (
+                            script: 'sudo cp gt3000.pickle /home/teamtitanic/datasets/.',
+                            def GIT_COMMIT_HASH = sh (script: "git log -n 1 --pretty=format:'%H'", returnStdout: true)
+                        )
+                    }
+                    catch (Exception e) {
+                        error ('There was an error while building the model.')
+                    }
+                }
+            } // steps
+        } // stage
+        */
+
+        stage('Build & Deploy Prediction Service') {
+            steps {
+                script {
+                    CONTAINER_NAME = ""
+                    try {
+                        // Build a new container
+                        sh (
+                            script: 'sudo docker build -t recommendation-service-v${BUILD_NUMBER} .',
+                        )
+                        // Re-deploy the database
+                        sh (
+                            script: 'sudo docker service update --force --update-order start-first --image postgres --log-driver=json-file --log-opt max-file=1 --log-opt max-size=10m --replicas 1 db'
+                        )
+                        // Check if the database is up and running
+                        def count = 0;
+                        def max_tries = 2;
+                        def max_wait_time = 10;
+                        
+                        try {
+                            // Get the name of the new running container.
+                            CONTAINER_NAME = sh(
+                                script: 'sudo docker ps --format "{{.Names}}" | grep db',
+                                returnStdout: true    
+                            ).trim()
+                            
+                            if (!CONTAINER_NAME) {
+                                error('New database container is not up. Aborting the build.');    
+                            }
+                        }
+                        catch (Exception e) {
+                            error('No container running for the platform currently.')
+                        }
+                        
+                        // Check if the database is up and running.. twice. If not, end the build.
+                        while (count <= max_tries) {
+                            count++;
+                            echo "Try ${count}"
+                            
+                            IS_DB_HEALTHY = "false"
+                            
+                            try {
+                                // Check if the database is up and running
+                                IS_DB_HEALTHY = sh (
+                                    script: "sudo docker exec -i ${CONTAINER_NAME} pg_isready --dbname=postgres --host=localhost --port=5432 --username=postgres",
+                                    returnStdout: true
+                                ).trim()
+                            }
+                            catch (Exception e) {
+                                def sleep_duration = max_wait_time - 5*(count - 1)
+                                echo "Database is not up yet. Sleeping for ${sleep_duration} seconds."
+                                sleep sleep_duration
+                                continue
+                            }
+                            
+                            echo "Result of Database ping: ${IS_DB_HEALTHY}"
+                            
+                            if (IS_DB_HEALTHY == "localhost:5432 - accepting connections") {
+                                echo "Database is up and running! Moving on to updating the platform."
+                                break;
+                            }
+                            else {
+                                def sleep_duration = max_wait_time - 5*(count - 1)
+                                echo "DB is not up yet. Going to sleep for ${sleep_duration} seconds."
+                                
+                                if (count == max_tries) {
+                                    error('Database is not up after two tries. Stopping the build.');
+                                }
+                                
+                                sleep sleep_duration
+                            } // if - db is healthy
+                        } // while
+                        
+                        // Update the recommendation service
+                        def GIT_COMMIT_HASH = sh (script: "git log -n 1 --pretty=format:'%H'", returnStdout: true)
+                        echo "GIT Commit Hash: ${GIT_COMMIT_HASH}" 
+                        sh (
+                            script: "sudo docker service update --env-add GIT_COMMIT_HASH=GIT_COMMIT_HASH --force --update-order start-first --image recommendation-service-v${BUILD_NUMBER} --log-driver=json-file --log-opt max-file=1 --log-opt max-size=10m --replicas 3 --update-delay 10s --update-parallelism 1 recommendation-service"
+                        )
+                        
+                    }
+                    catch (Exception e) {
+                        error ('There was an error during docker image creation.')
+                    }
+                } // script
+            } // steps
+        } // stage
+/*
+    stage('Post Deployment Tests') {
+        steps {
+            sleep time: 10000, unit: 'MILLISECONDS'
+             sh '''
+                #!/bin/sh
+                python3 -m pytest --cov=./ --cov-report=xml service_tests/
+            '''
+            echo 'Code quality check completed.'
+        } // steps
+    } // stage
+*/
+    } // stages
+} // pipeline

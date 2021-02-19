@@ -1,0 +1,40 @@
+version: "3"
+
+volumes:
+  new_datasets:
+    external: true
+
+services:
+  db:
+    image: postgres
+    container_name: database-service
+    logging:
+      driver: "json-file"
+      options:
+        max-file: "5"
+        max-size: "10m"
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+
+  app:
+    container_name: recommendation-service
+    logging:
+      driver: "json-file"
+      options:
+        max-file: "5"
+        max-size: "10m"
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - new_datasets:/app/data:ro
+    ports:
+      - "8082:8082"
+    environment:
+      - FLASK_ENV=development
+    depends_on:
+      - db
