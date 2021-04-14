@@ -29,7 +29,7 @@ and because of the self calculating latent features, our SVD implementation offe
 
 Our ML pipeline was based on the kedro framework of nested pipelines.
 
-![alt text](https://github.com/jakecerwin/ml_production_capstone/blob/master/im1.png?raw=true)
+![picture](im1.png)
 
 For the data engineering portion we take in the raw ratings from the kafka stream
 We perform a 90/10 train test split on the last 5 million ratings. We cap it at 5 million ratings to ensure memory consistency with a growing stream.
