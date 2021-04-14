@@ -84,13 +84,13 @@ Metric: Average rating given by users to movies recommended by our prediction se
 * How well was the recommended movie liked by the user?
 * Something simoke enough to calculate
 
-![alt text](https://github.com/jakecerwin/ml_production_capstone/blob/master/im2.png?raw=true)
+![alt text](im2.png)
 
 ### Telemetry: Canary Deployment
 
 We pivoted this system to allow us to implement canary releases. As seen below we utilized a dual docker container system with a load balancer to implement this.
 
-![alt text](https://github.com/jakecerwin/ml_production_capstone/blob/master/im3.png?raw=true)
+![alt text](im3.png)
 
 ### CI/CD Pipelines
 
@@ -98,8 +98,7 @@ We utilized 2 jenkins pipelines to manage both our ML and Telemetry. Our load ba
 
 ### Canary Release: Infrastructre
 
-![alt text](https://github.com/jakecerwin/ml_production_capstone/blob/master/im4.png?raw=true)
-
+![alt text](im4.png)
 
 ## Monitoring
 
@@ -121,7 +120,7 @@ A list of things we wanted to monitor
 
 ### Monitoring - Design
 
-![alt text](https://github.com/jakecerwin/ml_production_capstone/blob/master/im5.png?raw=true)
+![alt text](im5.png)
 
 ### Measures - Recommendation Service
 
